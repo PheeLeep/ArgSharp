@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "ArgSharpCmd": {
+      "commandName": "Project",
+      "commandLineArgs": "-path test --switch"
+    },
+    "ArgSharpCmd Help": {
+      "commandName": "Project",
+      "commandLineArgs": "-h"
+    }
+  }
+}
