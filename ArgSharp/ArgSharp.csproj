@@ -5,8 +5,15 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>ArgSharp</Title>
     <Company>PheeLeep</Company>
-    <Description>A simple library that parses the program's argument when opening.</Description>
+    <Description>A simple library that parses the program's commandline argument.</Description>
     <PackageIcon>ArgSharpIcon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/PheeLeep/ArgSharp</RepositoryUrl>
+    <PackageTags>parser;csharp</PackageTags>
+    <AssemblyName>PheeLeep.ArgSharp</AssemblyName>
+    <RootNamespace>PheeLeep.ArgSharp</RootNamespace>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -15,6 +22,14 @@
 
   <ItemGroup>
     <None Include="..\Images\ArgSharpIcon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
