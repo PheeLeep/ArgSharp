@@ -15,12 +15,7 @@
         /// <summary>
         /// Stores the information specified after the argument parameter specified to the class.
         /// </summary>
-        public string Value { get; internal set; }
-
-        /// <summary>
-        /// Gets the specified value name for the parameter.
-        /// </summary>
-        public string ValueName {
+        public string Value {
             get => valueName;
             internal set {
                 if (string.IsNullOrEmpty(value) || IsArgStoredOrInvoked) return;
@@ -28,6 +23,11 @@
                 valueName = value;
             }
         }
+
+        /// <summary>
+        /// Gets the specified value name for the parameter.
+        /// </summary>
+        public string ValueName { get; internal set; }
 
     }
 }
