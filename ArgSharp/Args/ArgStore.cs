@@ -5,6 +5,8 @@
     /// </summary>
     public class ArgStore : RootArgument {
 
+        private string valueName = "";
+
         /// <summary>
         /// Instantiate the <see cref="ArgStore"/> class.
         /// </summary>
@@ -18,7 +20,14 @@
         /// <summary>
         /// Gets the specified value name for the parameter.
         /// </summary>
-        public string ValueName { get; internal set; }
+        public string ValueName {
+            get => valueName;
+            internal set {
+                if (string.IsNullOrEmpty(value) || IsArgStoredOrInvoked) return;
+                SetArgStoredOrInvoked();
+                valueName = value;
+            }
+        }
 
     }
 }

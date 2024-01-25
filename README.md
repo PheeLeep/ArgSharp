@@ -1,5 +1,5 @@
 <div style="text-align:center">
-    <img src="./Images/ArgSharpIcon.png"/>
+    <img src="https://github.com/PheeLeep/ArgSharp/blob/master/Images/ArgSharpIcon.png"/>
 </div>
 
 # ArgSharp
@@ -18,11 +18,16 @@ ArgSharpClass.Init("ArgSharpCmd", "ArgSharp Command Test", "Description 1", "Epi
 ```
 
 After it has been initialized, you are now ready to add an argument by invoking `ArgSharpClass.AddArgument()`.
+### Note
+It should be noted that invoking `ArgSharpClass.AddArgument()` has some specific usage if the parameter on the commandline argument matches during parsing:
+- `AddArgument(string[], Action, string)`: used to store an Action to be invoked.
+- `AddArgument(string[], bool, string)`: used as a switch.
+- `AddArgument(string[], string, string)`: used to store a string variable.
 
 Example:
 ```csharp
-  ArgSharpClass.AddArgument(ArgSharpClass.ArgumentAction.Store, new[] { "-path" }, "Path", "A file path.");
-  ArgSharpClass.AddArgument(ArgSharpClass.ArgumentAction.Switch, new[] { "-sw", "--switch" }, helpMsg: "A switch.");
+ArgSharpClass.AddArgument(new[] { "-path" }, "Path", "A file path.");
+ArgSharpClass.AddArgument(new[] { "-sw", "--switch" }, false, "A switch. ABCDEFGHIJKLM\nOPQRSTUIVWXYZ");
 ```
 After it has been added, you can now invoke `ArgSharpClass.Parse()` to parse the commandline argument. (If the `string[]`-value was not provided to `ArgSharpClass.Parse()`,
 the parser will parse arguments from `Environment.GetCommandLineArgs()` instead.)

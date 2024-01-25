@@ -7,10 +7,8 @@ namespace ArgSharpCmd {
         static void Main(string[] args) {
             try {
                 ArgSharpClass.Init("ArgSharpCmd", "ArgSharp Command Test", "Description 1", "Epilogue");
-                ArgSharpClass.AddArgument(ArgSharpClass.ArgumentAction.Store, new[] { "-path" }, "Path",
-                                          "A file path.");
-                ArgSharpClass.AddArgument(ArgSharpClass.ArgumentAction.Switch, new[] { "-sw", "--switch" },
-                                          helpMsg: "A switch.");
+                ArgSharpClass.AddArgument(new[] { "-path" }, "Path", "A file path.");
+                ArgSharpClass.AddArgument(new[] { "-sw", "--switch" }, false, "A switch. ABCDEFGHIJKLM\nOPQRSTUIVWXYZ");
                 ArgSharpClass.AddExample("ArgSharpCmd -sw");
                 ArgSharpClass.Parse(args);
 

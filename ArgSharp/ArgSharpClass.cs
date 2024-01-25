@@ -21,26 +21,29 @@ namespace ArgSharp {
         private static string title;
 
         /// <summary>
-        /// An enumeration of specifying an argument behavior when the argument matched to the specified parameter.
+        /// An enumeration on how parser will behave if the argument length is zero.
         /// </summary>
-        public enum ArgumentAction {
+        public enum ArgZeroAction {
             /// <summary>
-            /// The argument will store the value after its parameter. (for <see cref="ArgStore"/>)
+            /// Exit the parser.
             /// </summary>
-            Store,
+            Return,
 
             /// <summary>
-            /// The argument will switch <see cref="ArgSwitch"/> value to true when the argument matches against
-            /// the specified parameter.
+            /// Shows the help output and exit the parser.
             /// </summary>
-            Switch,
+            ShowHelp,
 
             /// <summary>
-            /// The argument will invoke the <see cref="Action"/> specified in the <see cref="ArgInvoke"/> when
-            /// the argument matched against the specified parameter.
+            /// The parser will throw <see cref="ArgumentParseException"/> if the argument is zero.
             /// </summary>
-            Invoke
+            ShowError
         }
+
+        /// <summary>
+        /// Gets or sets the parser's behavior if the commandline argument is zero.
+        /// </summary>
+        public static ArgZeroAction ArgumentZeroAction { get; set; } = ArgZeroAction.ShowHelp;
 
         /// <summary>
         /// Initializes the parser.
@@ -62,45 +65,53 @@ namespace ArgSharp {
             ArgSharpClass.title = title;
 
             // First add the help.
-            AddArgument(ArgumentAction.Invoke, new string[] { "-h", "--help" }, helpMsg: "Show this message and exit.",
-                        a: new Action(() => InvokeHelp()));
+            AddArgument(new string[] { "-h", "--help" }, new Action(() => InvokeHelp()), "Show this message and exit.");
         }
 
         /// <summary>
-        /// Adds the argument and other parameters.
+        /// Sets the argument to invoke a method if the parameter is matched.
         /// </summary>
-        /// <param name="action">The action when the parser detects the specified parameter.</param>
-        /// <param name="parameters">The list of parameters for the specific argument.</param>
-        /// <param name="valName">The value name. (must use <see cref="ArgumentAction.Store"/> in 
-        /// <paramref name="action"/>)</param>
-        /// <param name="helpMsg">The argument message that will display when invoking '-h' parameter.</param>
-        /// <param name="a">
-        /// The <see cref="Action"/> method to be invoked once the parameter matched. 
-        /// (must use with <see cref="ArgumentAction.Invoke"/> in <paramref name="action"/>)
-        /// </param>
+        /// <param name="parameters">A list of parameters.</param>
+        /// <param name="a">The provided <see cref="Action"/> method to be invoke later.</param>
+        /// <param name="helpMsg">The help message.</param>
         /// <exception cref="ArgumentParseException"></exception>
-        public static void AddArgument(ArgumentAction action, string[] parameters, string valName = "(paramName)",
-                                       string helpMsg = "", Action a = null) {
-            RootArgument rA = null;
-            switch (action) {
-                case ArgumentAction.Store:
-                    rA = new ArgStore {
-                        ValueName = valName
-                    };
-                    break;
-                case ArgumentAction.Switch:
-                    rA = new ArgSwitch();
-                    break;
-                case ArgumentAction.Invoke:
-                    rA = a == null ? null : new ArgInvoke(a);
-                    break;
-            }
+        public static void AddArgument(string[] parameters, Action a, string helpMsg = "") {
+            if (a == null)
+                throw new ArgumentParseException("Invoke not been given for the argument.");
+            ArgInvoke argInvoke = new ArgInvoke(a) {
+                Parameters = parameters,
+                HelpMessage = helpMsg
+            };
+            InsertArgument(argInvoke);
+        }
 
-            if (rA == null || !parameters.Any() || parameters.Any(r => string.IsNullOrWhiteSpace(r)))
-                throw new ArgumentParseException("Argument failed to parse.");
-            rA.Parameters = parameters;
-            rA.HelpMessage = helpMsg;
-            AddArg(rA);
+        /// <summary>
+        /// Sets the argument to act as a switch if the parameter is matched.
+        /// </summary>
+        /// <param name="parameters">A list of parameters.</param>
+        /// <param name="defSwitch">The default boolean switch.</param>
+        /// <param name="helpMsg">The help message.</param>
+        public static void AddArgument(string[] parameters, bool defSwitch = false, string helpMsg = "") {
+            ArgSwitch argSwitch = new ArgSwitch(defSwitch) {
+                Parameters = parameters,
+                HelpMessage = helpMsg
+            };
+            InsertArgument(argSwitch);
+        }
+
+        /// <summary>
+        /// Sets the argument to store a value if the parameter is matched.
+        /// </summary>
+        /// <param name="parameters">A list of parameters.</param>
+        /// <param name="valPlaceHoder">A placeholder of the specific value name.</param>
+        /// <param name="helpMsg">The help message.</param>
+        public static void AddArgument(string[] parameters, string valPlaceHoder = "(paramName)", string helpMsg = "") {
+            ArgStore argStore = new ArgStore() {
+                Parameters = parameters,
+                HelpMessage = helpMsg,
+                ValueName = valPlaceHoder
+            };
+            InsertArgument(argStore);
         }
 
         /// <summary>
@@ -127,14 +138,28 @@ namespace ArgSharp {
         /// <param name="args">An array of string arguments.</param>
         /// <exception cref="ArgumentParseException"></exception>
         public static void Parse(string[] args) {
-            if (args.Length == 0 || ArgSharpClass.args.Count == 0) return;
+            if (ArgSharpClass.args.Count == 0) return;
+
+            if (args.Length == 0) {
+                switch (ArgumentZeroAction) {
+                    case ArgZeroAction.Return:
+                        return;
+                    case ArgZeroAction.ShowHelp:
+                        InvokeHelp();
+                        return;
+                    case ArgZeroAction.ShowError:
+                        throw new ArgumentParseException("No argument has been given.");
+                }
+            }
 
             for (int i = 0; i < args.Length; i++) {
                 RootArgument arg = ArgSharpClass.args.FirstOrDefault(r => r.Parameters.Contains(args[i]));
+                if (arg == null) {
+                    ShowUsage();
+                    throw new ArgumentParseException($"Parameter '{args[i]}' is not found.");
+                }
+                if (arg.IsArgStoredOrInvoked) continue;
                 switch (arg) {
-                    case null:
-                        ShowUsage();
-                        throw new ArgumentParseException($"Parameter '{args[i]}' is not found.");
                     case ArgStore av:
                         if ((i + 1) >= args.Length) {
                             ShowUsage();
@@ -144,7 +169,7 @@ namespace ArgSharp {
                         av.Value = args[i];
                         continue;
                     case ArgSwitch asw:
-                        asw.Value = true;
+                        asw.Value = !asw.Value;
                         continue;
                     case ArgInvoke aInv:
                         aInv.Invoke();
@@ -198,18 +223,29 @@ namespace ArgSharp {
             Environment.Exit(0);
         }
 
+        private static void InsertArgument(RootArgument arg) {
+            if (arg == null || !arg.Parameters.Any() || arg.Parameters.Any(r => string.IsNullOrWhiteSpace(r) ||
+                arg.Parameters.Distinct().Count() != arg.Parameters.Length ||
+                args.Any(arx => IsParameterMatched(arg.Parameters, arx.Parameters))))
+                throw new ArgumentParseException("Argument failed to parse or already added.");
+            args.Add(arg);
+        }
+
         /// <summary>
-        /// Adds an initialized <see cref="RootArgument"/>-derived class.
+        /// Checks if the new parameter array contains parameter from the old ones.
         /// </summary>
-        /// <param name="argNew">The initialized <see cref="RootArgument"/>-derived class.</param>
-        /// <exception cref="ArgumentParseException"></exception>
-        private static void AddArg(RootArgument argNew) {
-            foreach (var param in argNew.Parameters) {
-                RootArgument arg = args.FirstOrDefault(r => r.Parameters.Contains(param));
-                if (arg != null)
-                    throw new ArgumentParseException($"Parameter '{param}' already added.");
-            }
-            args.Add(argNew);
+        /// <param name="newParam">The new parameter array.</param>
+        /// <param name="oldParam">The old parameter array.</param>
+        /// <returns>
+        /// Returns true if the new parameter array contains parameter from the old parameter array.
+        /// Otherwise, false.
+        /// </returns>
+        private static bool IsParameterMatched(string[] newParam, string[] oldParam) {
+            if (newParam.Length == 0 || oldParam.Length == 0) return false;
+            foreach (string newP in newParam)
+                if (oldParam.Contains(newP))
+                    return true;
+            return false;
         }
 
         /// <summary>
@@ -253,7 +289,7 @@ namespace ArgSharp {
                     string[] argHelp = new string[2];
                     StringBuilder sb = new StringBuilder();
 
-                    sb.Append('\t');
+                    sb.Append("     ");
                     for (int i = 0; i < arg.Parameters.Length; i++) {
                         sb.Append(arg.Parameters[i]);
 
@@ -294,9 +330,39 @@ namespace ArgSharp {
             }
 
             for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < cols - 1; j++)
-                    sb.Append($"{array[i][j].PadRight(columnWidths[j] + padLength)}");
-                sb.AppendLine($"{array[i][cols - 1]}");
+                int restColLen = 0;
+                for (int j = 0; j < cols - 1; j++) {
+                    string val = array[i][j];
+                    string padded = new string(' ', columnWidths[j] + padLength - val.Length);
+                    sb.Append($"{val}{padded}");
+                    restColLen += val.Length + padded.Length;
+                }
+                int resCol = Console.WindowWidth - restColLen;
+                string paragraph = array[i][cols - 1];
+                if (string.IsNullOrWhiteSpace(paragraph)) {
+                    sb.AppendLine(" ");
+                    continue;
+                }
+                if (paragraph.Length <= resCol && !paragraph.Contains("\n") && !paragraph.Contains("\r\n")) {
+                    sb.AppendLine($"{paragraph}");
+                    continue;
+                }
+                string[] splitString = paragraph.Split(new[] { "\n", "\r\n" }, StringSplitOptions.None);
+                List<string> lines = new List<string>();
+                foreach (string line in splitString) {
+                    string modLine = line;
+                    while (modLine.Length > resCol) {
+                        lines.Add(modLine.Substring(0, resCol));
+                        modLine = modLine.Remove(0, resCol);
+                    }
+                    lines.Add(modLine);
+                }
+
+                bool firstIter = false;
+                foreach (string line in lines) {
+                    sb.AppendLine($"{(!firstIter ? "" : new string(' ', restColLen))}{line}");
+                    if (!firstIter) firstIter = true;
+                }
             }
             return sb.ToString();
         }

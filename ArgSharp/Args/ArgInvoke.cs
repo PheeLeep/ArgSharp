@@ -22,6 +22,8 @@ namespace ArgSharp.Args {
         /// Invoke the specified <see cref="Action"/> stored to the class.
         /// </summary>
         internal void Invoke() {
+            if (IsArgStoredOrInvoked) return;
+            SetArgStoredOrInvoked();
             a();
         }
     }

@@ -15,5 +15,17 @@
         /// Gets the help message.
         /// </summary>
         internal string HelpMessage { get; set; }
+
+        /// <summary>
+        /// Gets if the argument was invoked or stored a value.
+        /// </summary>
+        internal bool IsArgStoredOrInvoked { get; private set; }
+
+        /// <summary>
+        /// A derived-class must invoke this if the value was invoked or stored.
+        /// </summary>
+        protected virtual void SetArgStoredOrInvoked() {
+            IsArgStoredOrInvoked = true;
+        }
     }
 }

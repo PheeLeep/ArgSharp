@@ -6,14 +6,24 @@
     /// </summary>
     public class ArgSwitch : RootArgument {
 
+        private bool value;
         /// <summary>
         /// Instantiate the <see cref="ArgSwitch"/> class.
         /// </summary>
-        internal ArgSwitch() : base() { }
+        internal ArgSwitch(bool presetValue = false) : base() {
+            value = presetValue;
+        }
 
         /// <summary>
         /// Gets the <see cref="bool"/> value.
         /// </summary>
-        public bool Value { get; internal set; }
+        public bool Value {
+            get => value;
+            internal set {
+                if (IsArgStoredOrInvoked) return;
+                SetArgStoredOrInvoked();
+                this.value = value;
+            }
+        }
     }
 }
