@@ -1,11 +1,12 @@
-﻿namespace ArgSharp.Args {
+﻿namespace ArgSharp.Args
+{
 
     /// <summary>
     /// An abstract class use for implementing derived classes for other purposes
     /// regarding commandline argument parsinng.
     /// </summary>
-    public abstract class RootArgument {
-
+    public abstract class RootArgument
+    {
         /// <summary>
         /// Gets the list of the specified parameters for the class.
         /// </summary>
@@ -24,7 +25,8 @@
         /// <summary>
         /// A derived-class must invoke this if the value was invoked or stored.
         /// </summary>
-        protected virtual void SetArgStoredOrInvoked() {
+        protected virtual void SetArgStoredOrInvoked()
+        {
             IsArgStoredOrInvoked = true;
         }
     }

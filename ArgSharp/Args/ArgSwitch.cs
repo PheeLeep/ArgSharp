@@ -1,9 +1,12 @@
-﻿namespace ArgSharp.Args {
+﻿using System;
+
+namespace ArgSharp.Args {
 
     /// <summary>
     /// A class that stores a <see cref="bool"/> information and sets to true
     /// when the argument parameter matched to the specified parameter to the class.
     /// </summary>
+    [Obsolete("This class is obsolete for ArgStore<T>")]
     public class ArgSwitch : RootArgument {
 
         private bool value;
