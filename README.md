@@ -23,6 +23,14 @@ It should be noted that invoking `ArgSharpClass.AddArgument()` has some specific
 - `AddArgumentAction(string[], Action, string)`: used to store an Action to be invoked.
 - `AddArgument(string[], string, string, T)`:  used to store a variable or act as switch (if T is boolean).
 
+### Supported types
+- int
+- float
+- long
+- double
+- decimal
+- bool
+- string
 
 Example:
 ```csharp
