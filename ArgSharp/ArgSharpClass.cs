@@ -249,10 +249,6 @@ namespace ArgSharp
                         i++;
                         av.Value = args[i];
                         continue;
-                    // This switch will be remove later.
-                    case ArgSwitch asw:
-                        asw.Value = !asw.Value;
-                        continue;
                     case ArgInvoke aInv:
                         aInv.Invoke();
                         continue;
@@ -321,82 +317,6 @@ namespace ArgSharp
     $"Argument '{paramName}' was registered as '{match.GetTypedValue()?.GetType().Name ?? "unknown"}'" +
     $", but GetValue was called with type '{typeof(T).Name}'.");
         }
-
-
-        #region DEPRECATED METHODS. THIS WILL REMOVE IN THE FUTURE.
-
-        /// <summary>
-        /// Sets the argument to invoke a method if the parameter is matched.
-        /// </summary>
-        /// <param name="parameters">A list of parameters.</param>
-        /// <param name="a">The provided <see cref="Action"/> method to be invoke later.</param>
-        /// <param name="helpMsg">The help message.</param>
-        /// <exception cref="ArgumentParseException"></exception>
-        [Obsolete("This method name will be remove in the future. Use AddArgumentAction instead.")]
-        public static void AddArgument(string[] parameters, Action a, string helpMsg = "")
-        {
-            if (a == null)
-                throw new ArgumentParseException("Invoke not been given for the argument.");
-            ArgInvoke argInvoke = new ArgInvoke(a)
-            {
-                Parameters = parameters,
-                HelpMessage = helpMsg
-            };
-            InsertArgument(argInvoke);
-        }
-
-        /// <summary>
-        /// Sets the argument to act as a switch if the parameter is matched.
-        /// </summary>
-        /// <param name="parameters">A list of parameters.</param>
-        /// <param name="defSwitch">The default boolean switch.</param>
-        /// <param name="helpMsg">The help message.</param>
-        [Obsolete("This method will be remove in the future for clarity. Use AddArgument<T>")]
-        public static void AddArgument(string[] parameters, bool defSwitch = false, string helpMsg = "")
-        {
-            ArgSwitch argSwitch = new ArgSwitch(defSwitch)
-            {
-                Parameters = parameters,
-                HelpMessage = helpMsg
-            };
-            InsertArgument(argSwitch);
-        }
-
-        /// <summary>
-        /// Sets the argument to store a value if the parameter is matched.
-        /// </summary>
-        /// <param name="parameters">A list of parameters.</param>
-        /// <param name="valPlaceHoder">A placeholder of the specific value name.</param>
-        /// <param name="helpMsg">The help message.</param>
-        [Obsolete("This method is obsolete and it will be remove in the future. Use AddArgument<T>() instead")]
-        public static void AddArgument(string[] parameters, string valPlaceHoder = "(paramName)", string helpMsg = "")
-        {
-            ArgStore<string> argStore = new ArgStore<string>()
-            {
-                Parameters = parameters,
-                HelpMessage = helpMsg,
-                ValueName = valPlaceHoder
-            };
-            InsertArgument(argStore);
-        }
-
-        /// <summary>
-        /// Gets the <see cref="ArgSwitch"/> variables and it's values.
-        /// </summary>
-        /// <returns>Returns the array of <see cref="ArgSwitch"/> classes.</returns>
-        [Obsolete("This method is obsolete and it will be remove in the future. Use GetValue<T>() instead.")]
-        public static ArgSwitch[] GetArgSwitchValues()
-        {
-            List<ArgSwitch> argStores = new List<ArgSwitch>();
-            foreach (RootArgument ar in args)
-                if (ar is ArgSwitch store)
-                    argStores.Add(store);
-
-            return argStores.ToArray();
-        }
-
-        #endregion
-
 
         /// <summary>
         /// Invokes the help and exits..

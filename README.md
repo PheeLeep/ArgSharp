@@ -50,18 +50,6 @@ it will print the usage and error, before returning a false.
 ```csharp
    if (!ArgSharpClass.Parse(args)) return;
 ```
-## Deprecation
-These are the methods and classes that are deprecated following by 2.0 update, and it will be removed in the future update.
-
-- `AddArgument(string[], Action, string)`: renamed to `AddArgumentAction(string[], Action, string)`
-
-- `AddArgument(string[], bool, string)`: replaced by Type aware `AddArgument<T>`
-
-- `AddArgument(string[], string, string)`: replaced by Type aware `AddArgument<T>`
-
-- `GetArgSwitchValues()`: redundant. Use `GetArgStoreValues()` instead.
-
-- `public class ArgSwitch`: redundant.
 
 ## License
 This source code is under [MIT License.](https://github.com/PheeLeep/ArgSharp/blob/master/LICENSE.txt)
