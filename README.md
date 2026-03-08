@@ -3,6 +3,9 @@
 </div>
 
 # ArgSharp
+
+![NuGet Version](https://img.shields.io/nuget/v/PheeLeep.ArgSharp)
+
 A simple library that parses the program's commandline argument. The library is inspired by Python's [argparse](https://docs.python.org/3/library/argparse.html) 
 module where it parses commandline arguments, stores values, and prints help and usage.
 

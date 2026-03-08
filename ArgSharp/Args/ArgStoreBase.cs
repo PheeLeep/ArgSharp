@@ -12,9 +12,9 @@ namespace PheeLeep.ArgSharp.Args
         public string ValueName { get; internal set; }
 
         /// <summary>
-        /// Allow the argument store to be optional.
+        /// Allow the argument store to be required.
         /// </summary>
-        public bool IsOptional { get; internal set; }
+        public bool IsRequired { get; internal set; }
 
         /// <summary>
         /// Gets if the argument type is a switch. (applicable to boolean)

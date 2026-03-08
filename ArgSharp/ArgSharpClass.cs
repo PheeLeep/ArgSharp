@@ -2,6 +2,7 @@
 using PheeLeep.ArgSharp.Args;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -79,6 +80,11 @@ namespace ArgSharp
         public static ArgStoredOrInvokedAction ArgumentStoredOrInvokedAction { get; set; } = ArgStoredOrInvokedAction.Ignore;
 
         /// <summary>
+        /// Gets or sets the method to be invoke when the help is invoked.
+        /// </summary>
+        public static Action OnHelpInvoked { get; set; } = new Action(() => { Environment.Exit(0); });
+
+        /// <summary>
         /// Initializes the parser.
         /// </summary>
         /// <param name="progName">The name of the program. (example: ArgSharpCmd.exe or ArgSharpCmd)</param>
@@ -135,13 +141,15 @@ namespace ArgSharp
         public static void AddArgument<T>(string[] parameters,
                                           string placeHolder = "(value)",
                                           string helpMsg = "",
-                                          T defaultValue = default)
+                                          T defaultValue = default,
+                                          bool isRequired = false)
         {
             var argStore = new ArgStore<T>(defaultValue)
             {
                 Parameters = parameters,
                 HelpMessage = helpMsg,
-                ValueName = placeHolder
+                ValueName = placeHolder,
+                IsRequired = isRequired
             };
             InsertArgument(argStore);
         }
@@ -159,21 +167,23 @@ namespace ArgSharp
         /// <summary>
         /// Parses the arguments from <see cref="Environment.GetCommandLineArgs()"/>.
         /// </summary>
-        public static bool Parse()
+        /// <param name="errorOutput">The text writer to output error messages.</param>
+        public static bool Parse(TextWriter errorOutput = null)
         {
             List<string> argSpecified = new List<string>(Environment.GetCommandLineArgs());
             argSpecified.RemoveAt(0);
-            return Parse(argSpecified.ToArray());
+            return Parse(argSpecified.ToArray(), errorOutput);
         }
 
         /// <summary>
         /// Parses the arguments specified on the parameter.
         /// </summary>
         /// <param name="args">An array of string arguments.</param>
-        public static bool Parse(string[] args)
+        /// <param name="errorOutput">The text writer to output error messages.</param>
+        public static bool Parse(string[] args, TextWriter errorOutput = null)
         {
             if (ArgSharpClass.args.Count == 0) return false;
-
+            if (errorOutput == null) errorOutput = Console.Error;
             if (args.Length == 0)
             {
                 switch (ArgumentZeroAction)
@@ -184,7 +194,8 @@ namespace ArgSharp
                         InvokeHelp();
                         break;
                     case ArgZeroAction.ShowError:
-                        Console.WriteLine("No argument has been given.");
+                        ShowUsage();
+                        errorOutput.WriteLine("No argument has been given.");
                         break;
                 }
 
@@ -197,7 +208,7 @@ namespace ArgSharp
                 if (arg == null)
                 {
                     ShowUsage();
-                    Console.WriteLine($"Parameter '{args[i]}' is not found.");
+                    errorOutput.WriteLine($"Parameter '{args[i]}' is not found.");
                     return false;
                 }
 
@@ -210,7 +221,7 @@ namespace ArgSharp
                         case ArgStoredOrInvokedAction.OverwriteOrReinvoke:
                             break;
                         case ArgStoredOrInvokedAction.ShowError:
-                            Console.WriteLine($"Parameter '{args[i]}' is already invoked or already stored the value.");
+                            errorOutput.WriteLine($"Parameter '{args[i]}' is already invoked or already stored the value.");
                             return false;
                     }
                 }
@@ -227,7 +238,7 @@ namespace ArgSharp
 
                         if ((i + 1) >= args.Length)
                         {
-                            if (!av.IsOptional)
+                            if (av.IsRequired)
                             {
                                 Console.WriteLine($"Value for '{args[i]}' is not found.");
                                 ShowUsage();
@@ -246,6 +257,21 @@ namespace ArgSharp
                         aInv.Invoke();
                         continue;
                 }
+            }
+
+            List<string> missingRequired = new List<string>();
+            foreach (RootArgument arg in ArgSharpClass.args)
+            {
+                if (arg is ArgStoreBase store && store.IsRequired && !arg.IsArgStoredOrInvoked)
+                    missingRequired.Add(string.Join(" | ", arg.Parameters));
+            }
+
+            if (missingRequired.Count > 0)
+            {
+                ShowUsage();
+                errorOutput.WriteLine($"The following required argument(s) were not provided: " +
+                                  $"{string.Join(", ", missingRequired)}");
+                return false;
             }
 
             return true;
@@ -281,7 +307,19 @@ namespace ArgSharp
                 .OfType<ArgStore<T>>()
                 .SingleOrDefault(arg => arg.Parameters.Contains(paramName));
 
-            return store != null ? store.TypedValue : default;
+            ArgStoreBase match = args
+                   .OfType<ArgStoreBase>()
+                   .SingleOrDefault(arg => arg.Parameters.Contains(paramName));
+
+            if (match == null)
+                return default;
+
+            if (match is ArgStore<T> typedStore)
+                return typedStore.TypedValue;
+
+            throw new InvalidCastException(
+    $"Argument '{paramName}' was registered as '{match.GetTypedValue()?.GetType().Name ?? "unknown"}'" +
+    $", but GetValue was called with type '{typeof(T).Name}'.");
         }
 
 
@@ -379,34 +417,40 @@ namespace ArgSharp
                     Console.WriteLine($"\t{argExample}");
                 }
             }
-            Environment.Exit(0);
+            OnHelpInvoked();
         }
 
         private static void InsertArgument(RootArgument arg)
         {
-            if (arg == null || !arg.Parameters.Any() || arg.Parameters.Any(r => string.IsNullOrWhiteSpace(r) ||
-                arg.Parameters.Distinct().Count() != arg.Parameters.Length ||
-                args.Any(arx => IsParameterMatched(arg.Parameters, arx.Parameters))))
-                throw new ArgumentParseException("Argument failed to parse or already added.");
-            args.Add(arg);
-        }
+            if (arg == null)
+                throw new ArgumentParseException("Argument cannot be null.");
 
-        /// <summary>
-        /// Checks if the new parameter array contains parameter from the old ones.
-        /// </summary>
-        /// <param name="newParam">The new parameter array.</param>
-        /// <param name="oldParam">The old parameter array.</param>
-        /// <returns>
-        /// Returns true if the new parameter array contains parameter from the old parameter array.
-        /// Otherwise, false.
-        /// </returns>
-        private static bool IsParameterMatched(string[] newParam, string[] oldParam)
-        {
-            if (newParam.Length == 0 || oldParam.Length == 0) return false;
-            foreach (string newP in newParam)
-                if (oldParam.Contains(newP))
-                    return true;
-            return false;
+            if (arg.Parameters == null || !arg.Parameters.Any())
+                throw new ArgumentParseException("Argument must have at least one parameter (e.g. \"-o\" or \"--output\").");
+
+            if (arg.Parameters.Any(p => string.IsNullOrWhiteSpace(p)))
+                throw new ArgumentParseException("Argument parameters cannot be null or whitespace.");
+
+            if (arg.Parameters.Distinct().Count() != arg.Parameters.Length)
+            {
+                // Find and name the actual duplicate for a helpful message.
+                string duplicate = arg.Parameters
+                    .GroupBy(p => p)
+                    .First(g => g.Count() > 1)
+                    .Key;
+                throw new ArgumentParseException(
+                    $"Duplicate parameter detected within the same argument: '{duplicate}'.");
+            }
+
+            foreach (RootArgument existing in args)
+            {
+                string conflict = arg.Parameters.FirstOrDefault(p => existing.Parameters.Contains(p));
+                if (conflict != null)
+                    throw new ArgumentParseException(
+                        $"Parameter '{conflict}' is already registered by another argument.");
+            }
+
+            args.Add(arg);
         }
 
         /// <summary>
@@ -414,35 +458,59 @@ namespace ArgSharp
         /// </summary>
         private static void ShowUsage()
         {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < args.Count; i++)
+            if (!string.IsNullOrWhiteSpace(title))
+                Console.WriteLine(title + "\n");
+
+            int consoleWidth = Console.WindowWidth > 0 ? Console.WindowWidth : 80;
+
+            // Build each argument token e.g. [-h | --help] or [-o <file>]
+            List<string> tokens = new List<string>();
+            foreach (RootArgument arg in args)
             {
-                RootArgument arg = args[i];
-                sb.Append('[');
+                StringBuilder sb = new StringBuilder("[");
                 for (int j = 0; j < arg.Parameters.Length; j++)
                 {
                     sb.Append(arg.Parameters[j]);
 
-                    if (arg is ArgStoreBase argStore)
+                    if (arg is ArgStoreBase argStore && !argStore.IsSwitch
+                        && !string.IsNullOrWhiteSpace(argStore.ValueName))
                     {
                         sb.Append($" <{argStore.ValueName}>");
                     }
+
                     if ((j + 1) < arg.Parameters.Length)
                         sb.Append(" | ");
                 }
                 sb.Append(']');
-                if ((i + 1) < args.Count)
-                    sb.Append(' ');
+                tokens.Add(sb.ToString());
             }
 
-            if (!string.IsNullOrWhiteSpace(title))
-                Console.WriteLine(title + "\n");
+            // Print "Usage:" header then wrap tokens across lines
+            string usageLabel = $"  {progName} ";
+            int indent = usageLabel.Length;
             Console.WriteLine("Usage:");
-            string[][] arrUsage = {
-                new []{progName , sb.ToString() }
-            };
-            Console.WriteLine(GenerateTable(arrUsage, 1));
+            Console.Write(usageLabel);
+
+            int currentLineLen = indent;
+            for (int i = 0; i < tokens.Count; i++)
+            {
+                string token = tokens[i] + (i < tokens.Count - 1 ? " " : "");
+
+                // If token doesn't fit on current line, wrap
+                if (currentLineLen + token.Length > consoleWidth && currentLineLen > indent)
+                {
+                    Console.WriteLine();
+                    Console.Write(new string(' ', indent));
+                    currentLineLen = indent;
+                }
+
+                Console.Write(token);
+                currentLineLen += token.Length;
+            }
+
+            Console.WriteLine("\n");
         }
+
 
         /// <summary>
         /// Shows the help description.
@@ -450,30 +518,30 @@ namespace ArgSharp
         private static void ShowHelp()
         {
             List<string[]> helpArgs = new List<string[]>();
+
             foreach (RootArgument arg in args)
             {
-                if (arg.Parameters != null)
+                if (arg.Parameters == null) continue;
+
+                StringBuilder sb = new StringBuilder("  ");
+                for (int i = 0; i < arg.Parameters.Length; i++)
                 {
-                    string[] argHelp = new string[2];
-                    StringBuilder sb = new StringBuilder();
+                    sb.Append(arg.Parameters[i]);
 
-                    sb.Append("     ");
-                    for (int i = 0; i < arg.Parameters.Length; i++)
+                    // Only show value placeholder for non-switch stores with a non-empty name
+                    if (arg is ArgStoreBase argStore && !argStore.IsSwitch
+                        && !string.IsNullOrWhiteSpace(argStore.ValueName))
                     {
-                        sb.Append(arg.Parameters[i]);
-
-                        if (arg is ArgStoreBase argStore && !argStore.IsSwitch)
-                        {
-                            sb.Append($" <{argStore.ValueName}>");
-                        }
-                        if ((i + 1) < arg.Parameters.Length)
-                            sb.Append(", ");
+                        sb.Append($" <{argStore.ValueName}>");
                     }
-                    argHelp[0] = sb.ToString();
-                    argHelp[1] = arg.HelpMessage;
-                    helpArgs.Add(argHelp);
+
+                    if ((i + 1) < arg.Parameters.Length)
+                        sb.Append(", ");
                 }
+
+                helpArgs.Add(new[] { sb.ToString(), arg.HelpMessage ?? "" });
             }
+
             Console.WriteLine("Options:");
             Console.WriteLine(GenerateTable(helpArgs.ToArray()));
         }
@@ -484,74 +552,108 @@ namespace ArgSharp
         /// <param name="array">A two-dimensional array of strings.</param>
         /// <param name="padLength">The padded length of each rows, except in the last columns.</param>
         /// <returns>Returns the string containing table formatted values.</returns>
-        private static string GenerateTable(string[][] array, int padLength = 3)
+        private static string GenerateTable(string[][] array, int padLength = 4)
         {
+            if (array == null || array.Length == 0) return string.Empty;
+
+            int consoleWidth = Console.WindowWidth > 0 ? Console.WindowWidth : 80;
             StringBuilder sb = new StringBuilder();
-            int rows = array.Length;
-            int cols = array[0].Length;
 
-            // Calculate column widths
-            int[] columnWidths = new int[cols - 1]; // Exclude the last column
+            // Find the widest left column
+            int leftColWidth = 0;
+            foreach (string[] row in array)
+                if (row[0].Length > leftColWidth)
+                    leftColWidth = row[0].Length;
 
-            for (int j = 0; j < cols - 1; j++)
+            int rightColStart = leftColWidth + padLength;
+
+            // Cap rightColStart so the right column always has at least 30 chars
+            if (rightColStart > consoleWidth - 30)
+                rightColStart = consoleWidth - 30;
+
+            int rightColWidth = consoleWidth - rightColStart;
+
+            foreach (string[] row in array)
             {
-                for (int i = 0; i < rows; i++)
+                string left = row[0];
+                string right = row.Length > 1 ? (row[1] ?? "") : "";
+
+                // Pad left column
+                string leftPadded = left.PadRight(rightColStart);
+
+                if (string.IsNullOrWhiteSpace(right))
                 {
-                    int length = array[i][j].Length;
-                    columnWidths[j] = Math.Max(columnWidths[j], length);
+                    sb.AppendLine(leftPadded.TrimEnd());
+                    continue;
+                }
+
+                // Word-wrap the right column
+                List<string> wrappedLines = WordWrap(right, rightColWidth);
+
+                for (int i = 0; i < wrappedLines.Count; i++)
+                {
+                    if (i == 0)
+                        sb.AppendLine($"{leftPadded}{wrappedLines[i]}");
+                    else
+                        sb.AppendLine($"{new string(' ', rightColStart)}{wrappedLines[i]}");
                 }
             }
 
-            for (int i = 0; i < rows; i++)
-            {
-                int restColLen = 0;
-                for (int j = 0; j < cols - 1; j++)
-                {
-                    string val = array[i][j];
-                    string padded = new string(' ', columnWidths[j] + padLength - val.Length);
-                    sb.Append($"{val}{padded}");
-                    restColLen += val.Length + padded.Length;
-                }
-                int resCol = Console.WindowWidth - restColLen;
-
-                string paragraph = array[i][cols - 1];
-
-                if (resCol <= 0)
-                {
-                    sb.AppendLine(paragraph);
-                    continue;
-                }
-                if (string.IsNullOrWhiteSpace(paragraph))
-                {
-                    sb.AppendLine(" ");
-                    continue;
-                }
-                if (paragraph.Length <= resCol && !paragraph.Contains("\n") && !paragraph.Contains("\r\n"))
-                {
-                    sb.AppendLine($"{paragraph}");
-                    continue;
-                }
-                string[] splitString = paragraph.Split(new[] { "\n", "\r\n" }, StringSplitOptions.None);
-                List<string> lines = new List<string>();
-                foreach (string line in splitString)
-                {
-                    string modLine = line;
-                    while (modLine.Length > resCol && resCol > 0)
-                    {
-                        lines.Add(modLine.Substring(0, resCol));
-                        modLine = modLine.Remove(0, resCol);
-                    }
-                    lines.Add(modLine);
-                }
-
-                bool firstIter = false;
-                foreach (string line in lines)
-                {
-                    sb.AppendLine($"{(!firstIter ? "" : new string(' ', restColLen))}{line}");
-                    if (!firstIter) firstIter = true;
-                }
-            }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Wraps text at word boundaries for a given max width.
+        /// Respects explicit newlines (\n) in the source text.
+        /// </summary>
+        private static List<string> WordWrap(string text, int maxWidth)
+        {
+            List<string> result = new List<string>();
+            if (maxWidth <= 0)
+            {
+                result.Add(text);
+                return result;
+            }
+
+            // Split on explicit newlines first
+            string[] hardLines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+
+            foreach (string hardLine in hardLines)
+            {
+                if (hardLine.Length <= maxWidth)
+                {
+                    result.Add(hardLine);
+                    continue;
+                }
+
+                // Word-wrap the line
+                string[] words = hardLine.Split(' ');
+                StringBuilder line = new StringBuilder();
+
+                foreach (string word in words)
+                {
+                    if (line.Length == 0)
+                    {
+                        line.Append(word);
+                    }
+                    else if (line.Length + 1 + word.Length <= maxWidth)
+                    {
+                        line.Append(' ');
+                        line.Append(word);
+                    }
+                    else
+                    {
+                        result.Add(line.ToString());
+                        line.Clear();
+                        line.Append(word);
+                    }
+                }
+
+                if (line.Length > 0)
+                    result.Add(line.ToString());
+            }
+
+            return result;
         }
     }
 }

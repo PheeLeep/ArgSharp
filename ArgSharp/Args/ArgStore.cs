@@ -41,7 +41,6 @@ namespace ArgSharp.Args
                 throw new ArgumentParseException($"Type {type.Name} is not supported.");
 
             typedValue = default;
-            IsOptional = false;
         }
 
         /// <summary>
@@ -54,7 +53,6 @@ namespace ArgSharp.Args
             if (!Parsers.ContainsKey(type))
                 throw new ArgumentParseException($"Type {type.Name} is not supported.");
             typedValue = defaultValue;
-            IsOptional = true;
         }
 
         public override string Value
