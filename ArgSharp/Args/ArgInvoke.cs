@@ -66,7 +66,8 @@ namespace ArgSharp.Args
         /// </summary>
         /// <param name="parameters">A list of parameters.</param>
         /// <param name="a">
-        /// The provided <see cref="Action"/> method to be invoke later. Leaving it null will run the help message.
+        /// The provided <see cref="Action"/> method to be invoke later.<br /> 
+        /// Leaving it null will run help message if no succeeding arguments supplied.
         /// </param>
         /// <param name="helpMsg">The help message.</param>
         /// <exception cref="ArgumentParseException"></exception>
@@ -263,6 +264,9 @@ namespace ArgSharp.Args
         }
         private void InsertArgument(RootArgument arg)
         {
+            if (ArgSharpClass.IsParsed)
+                throw new InvalidOperationException("Already parsed. Unable to add another argument.");
+
             if (arg == null)
                 throw new ArgumentParseException("Argument cannot be null.");
 

@@ -15,6 +15,9 @@ namespace ArgSharp
     /// </summary>
     public static class ArgSharpClass
     {
+        /// <summary>
+        /// A main ArgInvoke for the ArgSharpClass.
+        /// </summary>
         private static ArgInvoke motherArg = null;
 
         /// <summary>
@@ -88,6 +91,11 @@ namespace ArgSharp
         public static Action OnHelpInvoked { get; set; } = new Action(() => { Environment.Exit(0); });
 
         /// <summary>
+        /// Gets if <see cref="ArgSharpClass"/> is already parsed.
+        /// </summary>
+        public static bool IsParsed { get; internal set; } = false;
+
+        /// <summary>
         /// Initializes the parser.
         /// </summary>
         /// <param name="progName">The name of the program. (example: ArgSharpCmd.exe or ArgSharpCmd)</param>
@@ -126,14 +134,14 @@ namespace ArgSharp
         {
             if (motherArg is null)
             {
-                throw new InvalidOperationException($"Initialization has not been made. Invoke '{nameof(Init)}'");
+                throw new InvalidOperationException($"Initialization has not been made. Invoke '{nameof(Init)}' first.");
             }
 
             motherArg.AddArgument(parameters, placeHolder, helpMsg, defaultValue, isRequired);
         }
 
         /// <summary>
-        /// Inserts the example of using your program.
+        /// Inserts the example of using your program with a specific parameter.
         /// </summary>
         /// <param name="example">The example string.</param>
         public static void AddExample(string example)
@@ -141,7 +149,7 @@ namespace ArgSharp
             if (string.IsNullOrWhiteSpace(example)) return;
             if (motherArg is null)
             {
-                throw new InvalidOperationException($"Initialization has not been made. Invoke '{nameof(Init)}'");
+                throw new InvalidOperationException($"Initialization has not been made. Invoke '{nameof(Init)}' first.");
             }
 
             motherArg.AddExample(example);
@@ -152,9 +160,11 @@ namespace ArgSharp
         /// </summary>
         /// <param name="parameters">A list of parameters.</param>
         /// <param name="a">
-        /// The provided <see cref="Action"/> method to be invoke later. Leaving it null will run the help message.
+        /// The provided <see cref="Action"/> method to be invoke later.<br /> 
+        /// Leaving it null will run help message if no succeeding arguments supplied.
         /// </param>
         /// <param name="helpMsg">The help message.</param>
+        /// <returns>Returns the <see cref="ArgInvoke"/> object.</returns>
         /// <exception cref="ArgumentParseException"></exception>
         public static ArgInvoke AddArgumentAction(string[] parameters, Action a = null, string helpMsg = "")
         {
@@ -166,7 +176,7 @@ namespace ArgSharp
         }
 
         /// <summary>
-        /// Gets the <see cref="ArgStoreBase"/> variables and it's values.
+        /// Gets the <see cref="ArgStoreBase"/> variables and its values on <see cref="ArgSharpClass" />
         /// </summary>
         /// <returns>Returns the array of <see cref="ArgStoreBase"/> classes.</returns>
         public static ArgStoreBase[] GetArgStoreValues()
@@ -195,6 +205,7 @@ namespace ArgSharp
         /// </summary>
         /// <param name="args">An array of string arguments.</param>
         /// <param name="errorOutput">The text writer to output error messages.</param>
+        /// <returns>Returns a boolean if parsing has been completed.</returns>
         /// <exception cref="InvalidOperationException />
         public static bool Parse(string[] args, TextWriter errorOutput = null)
         {
@@ -202,7 +213,12 @@ namespace ArgSharp
             {
                 throw new InvalidOperationException("ArgSharpClass is not initiated.");
             }
+            if (IsParsed)
+            {
+                throw new InvalidOperationException("Already parsed.");
+            }
 
+            IsParsed = true;
             var res = motherArg.Invoke(args, out int statusCode, errorOutput);
             StatusCode = statusCode;
             return res;

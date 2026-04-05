@@ -23,7 +23,7 @@ ArgSharpClass.Init("ArgSharpCmd", "ArgSharp Command Test", "Description 1", "Epi
 After it has been initialized, you are now ready to add an argument by invoking `ArgSharpClass.AddArgument()`.
 
 It should be noted that invoking `ArgSharpClass.AddArgument()` has some specific usage if the parameter on the commandline argument matches during parsing:
-- `AddArgumentAction(string[], Action, string)`: used to store an Action to be invoked.
+- `AddArgumentAction(string[], Action?, string)`: used to store an Action to be invoked (see Command Chaining for details).
 - `AddArgument(string[], string, string, T)`:  used to store a variable or act as switch (if T is boolean).
 
 ### Supported types
@@ -35,13 +35,32 @@ It should be noted that invoking `ArgSharpClass.AddArgument()` has some specific
 - bool
 - string
 
-Example:
+## Example:
+
+### Simple
+
 ```csharp
 ArgSharpClass.AddArgument(new[] { "-path" }, "Path", "A file path.");
 ArgSharpClass.AddArgument(new[] { "-sw", "--switch" }, helpMsg: "A switch. ABCDEFGHIJKLM\nOPQRSTUIVWXYZ", defaultValue: false);
 ```
 After it has been added, you can now invoke `ArgSharpClass.Parse()` to parse the commandline argument. (If the `string[]`-value was not provided to `ArgSharpClass.Parse()`,
 the parser will parse arguments from `Environment.GetCommandLineArgs()` instead.)
+
+### Command Chaining (on Version 2.3)
+
+Command Chaining performs by creating `ArgInvoke` class from `AddArgumentAction` (either from the root command `ArgSharpClass` or other `ArgInvoke` objects)
+
+During parsing, ArgSharp will check switches and parameter arguments first on its own before invoking the parameters for `ArgInvoke`. Other `ArgInvoke` objects that are attached will perform the same procedure.
+
+```csharp
+var profile = ArgSharpClass.AddArgumentAction(["profile", "p"], null, "Performs show profiles.");
+
+profile.AddArgument(["test"], helpMsg: "Show test", defaultValue: "");
+var prof2 = profile.AddArgumentAction(["expedite"], () =>
+{
+    // Perform some command here.
+}, "Performs expedition.");
+```
 
 ## Note
 
