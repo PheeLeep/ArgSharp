@@ -48,7 +48,12 @@ namespace ArgSharp
             /// <summary>
             /// The parser will throw <see cref="ArgumentParseException"/> if the argument is zero.
             /// </summary>
-            ShowError
+            ShowError,
+
+            /// <summary>
+            /// Treat zero argument as pass.
+            /// </summary>
+            TreatAsSuccess
         }
 
         /// <summary>
@@ -76,7 +81,8 @@ namespace ArgSharp
         }
 
         /// <summary>
-        /// Gets or sets the parser's behavior if the commandline argument is zero.
+        /// Gets or sets the parser's behavior if the commandline argument is zero.<br />
+        /// <see cref="ArgInvoke"/> objects can override with their own ArgumentZeroAction
         /// </summary>
         public static ArgZeroAction ArgumentZeroAction { get; set; } = ArgZeroAction.ShowHelp;
 
@@ -116,6 +122,8 @@ namespace ArgSharp
             ArgSharpClass.epilog = epilog;
             ArgSharpClass.title = title;
         }
+
+     
 
         /// <summary>
         /// Sets the argument to store a specific variable.
@@ -193,6 +201,7 @@ namespace ArgSharp
         /// Parses the arguments from <see cref="Environment.GetCommandLineArgs()"/>.
         /// </summary>
         /// <param name="errorOutput">The text writer to output error messages.</param>
+        /// <exception cref="InvalidOperationException />
         public static bool Parse(TextWriter errorOutput = null)
         {
             List<string> argSpecified = new List<string>(Environment.GetCommandLineArgs());

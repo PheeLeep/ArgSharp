@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArgSharp", "ArgSharp\ArgSha
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArgSharpCmd", "ArgSharpCmd\ArgSharpCmd.csproj", "{9CAA519E-AC72-460B-935D-0331F6B09755}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArgSharpTest", "ArgSharpTest\ArgSharpTest.csproj", "{1ED102AC-83F7-47F1-8DFF-8C9FCBB1981A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{9CAA519E-AC72-460B-935D-0331F6B09755}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9CAA519E-AC72-460B-935D-0331F6B09755}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9CAA519E-AC72-460B-935D-0331F6B09755}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1ED102AC-83F7-47F1-8DFF-8C9FCBB1981A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1ED102AC-83F7-47F1-8DFF-8C9FCBB1981A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1ED102AC-83F7-47F1-8DFF-8C9FCBB1981A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1ED102AC-83F7-47F1-8DFF-8C9FCBB1981A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

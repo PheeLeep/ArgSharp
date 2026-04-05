@@ -21,11 +21,18 @@ namespace ArgSharp.Args
 
         private readonly List<RootArgument> args = new List<RootArgument>();
         private readonly List<string> examples = new List<string>();
+        private bool subcommandWasInvoked = false;
 
         /// <summary>
         /// Gets the parent <see cref="ArgInvoke"/> node. Returns null if it's a root node.
         /// </summary>
         internal ArgInvoke ParentNode { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the parser's behavior if the commandline argument is zero.<br />
+        /// Not changing this property will follow <see cref="ArgSharpClass"/>'s own value of .
+        /// </summary>
+        public ArgZeroAction ArgumentZeroAction { get; set; } = ArgSharpClass.ArgumentZeroAction;
 
         /// <summary>
         /// Sets the argument to store a specific variable.
@@ -120,6 +127,10 @@ namespace ArgSharp.Args
             if (IsArgStoredOrInvoked) return false;
             if (!Parse(args, out statusCode, errorOutput)) return false;
             SetArgStoredOrInvoked();
+
+            // If a subcommand was already invoked during Parse, don't invoke action or show help
+            if (subcommandWasInvoked) return true;
+
             if (a is null)
             {
                 ShowHelp();
@@ -169,6 +180,8 @@ namespace ArgSharp.Args
             {
                 switch (ArgumentZeroAction)
                 {
+                    case ArgZeroAction.TreatAsSuccess:
+                        return true;
                     case ArgZeroAction.Return:
                         break;
                     case ArgZeroAction.ShowHelp:
@@ -183,16 +196,20 @@ namespace ArgSharp.Args
                 return false;
             }
 
-            // Check for help flag before processing arguments
-            if (args.Contains("-h") || args.Contains("--help"))
-            {
-                InvokeHelp();
-                return true;
-            }
+
 
             for (int i = 0; i < args.Length; i++)
             {
-                RootArgument arg = this.args.FirstOrDefault(r => r.Parameters.Contains(args[i]));
+
+                var argTxt = args[i];
+                // Check for help flag before processing arguments
+                if (argTxt.ToLower() == "-h" || argTxt.ToLower() == "--help")
+                {
+                    InvokeHelp();
+                    return false;
+                }
+
+                RootArgument arg = this.args.FirstOrDefault(r => r.Parameters.Contains(argTxt));
                 if (arg == null)
                 {
                     ShowUsage();
@@ -240,8 +257,8 @@ namespace ArgSharp.Args
                     case ArgInvoke aInv:
                         // Pass only remaining args after the subcommand name to the subcommand
                         string[] remainingArgs = args.Skip(i + 1).ToArray();
-                        aInv.Invoke(remainingArgs, out statusCode, errorOutput);
-                        return true;  // Stop parsing after subcommand invocation
+                        bool invokeResult = aInv.Invoke(remainingArgs, out statusCode, errorOutput);
+                        return invokeResult;  // Return the result of subcommand invocation
                 }
             }
 

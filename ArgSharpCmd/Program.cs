@@ -1,4 +1,5 @@
 ﻿using ArgSharp;
+using ArgSharp.Args;
 
 namespace ArgSharpCmd
 {
@@ -11,6 +12,7 @@ namespace ArgSharpCmd
             try
             {
                 ArgSharpClass.OnHelpInvoked = () => Environment.Exit(0);
+
                 ArgSharpClass.Init("ArgSharpCmd", "ArgSharp Command Test", "Description 1", "Epilogue");
                 ArgSharpClass.AddArgument<string>(["-path"], "Path", "A file path.");
                 ArgSharpClass.AddArgument(["-sw", "--switch"], helpMsg: "A switch", defaultValue: false, isRequired: false);
@@ -18,11 +20,20 @@ namespace ArgSharpCmd
 
                 var profile = ArgSharpClass.AddArgumentAction(["profile", "p"], null, "Performs show profiles.");
 
-                profile.AddArgument(["test"], helpMsg: "Show test", defaultValue: "");
-                var prof2 = profile.AddArgumentAction(["expedite"], () =>
+                profile.AddArgument(["test"], helpMsg: "Show test", defaultValue: "test1");
+                var prof2 = profile.AddArgumentAction(["run"], () =>
                 {
+                    var items = profile.GetArgStoreValues();
+                    if (items.SingleOrDefault(a => a.Parameters.Contains("test")) is ArgStore<string> test)
+                    {
+                        Console.WriteLine($"Value {test.TypedValue}");
+                    } else
+                    {
+                        Console.WriteLine("Test argument not found.");
+                    }
 
-                }, "Performs expedition.");
+                }, "Performs run test (show output).");
+                prof2.ArgumentZeroAction = ArgSharpClass.ArgZeroAction.TreatAsSuccess;
                 if (!ArgSharpClass.Parse(args)) return;
 
                 Console.WriteLine("Argument Stores:");
