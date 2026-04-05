@@ -123,7 +123,7 @@ namespace ArgSharp
             ArgSharpClass.title = title;
         }
 
-     
+
 
         /// <summary>
         /// Sets the argument to store a specific variable.
@@ -172,15 +172,21 @@ namespace ArgSharp
         /// Leaving it null will run help message if no succeeding arguments supplied.
         /// </param>
         /// <param name="helpMsg">The help message.</param>
+        /// <param name="description">The description of the program.</param>
+        /// <param name="epilog">The epilogue of the program after printing the help.</param>
         /// <returns>Returns the <see cref="ArgInvoke"/> object.</returns>
         /// <exception cref="ArgumentParseException"></exception>
-        public static ArgInvoke AddArgumentAction(string[] parameters, Action a = null, string helpMsg = "")
+        public static ArgInvoke AddArgumentAction(string[] parameters,
+                                                  Action a = null,
+                                                  string helpMsg = "",
+                                                  string description = "",
+                                                  string epilog = "")
         {
             if (motherArg is null)
             {
                 throw new InvalidOperationException($"Initialization has not been made. Invoke '{nameof(Init)}'");
             }
-            return motherArg.AddArgumentAction(parameters, a, helpMsg);
+            return motherArg.AddArgumentAction(parameters, a, helpMsg, description, epilog);
         }
 
         /// <summary>

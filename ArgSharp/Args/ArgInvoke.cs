@@ -23,6 +23,9 @@ namespace ArgSharp.Args
         private readonly List<string> examples = new List<string>();
         private bool subcommandWasInvoked = false;
 
+        private string description;
+        private string epilog;
+
         /// <summary>
         /// Gets the parent <see cref="ArgInvoke"/> node. Returns null if it's a root node.
         /// </summary>
@@ -77,10 +80,17 @@ namespace ArgSharp.Args
         /// Leaving it null will run help message if no succeeding arguments supplied.
         /// </param>
         /// <param name="helpMsg">The help message.</param>
+        /// <param name="description">The description of the program.</param>
+        /// <param name="epilog">The epilogue of the program after printing the help.</param>
+        /// <returns>Returns the <see cref="ArgInvoke"/> object.</returns>
         /// <exception cref="ArgumentParseException"></exception>
-        public ArgInvoke AddArgumentAction(string[] parameters, Action a = null, string helpMsg = "")
+        public ArgInvoke AddArgumentAction(string[] parameters,
+                                           Action a = null, 
+                                           string helpMsg = "",
+                                           string description = "",
+                                           string epilog = "")
         {
-            ArgInvoke argInvoke = new ArgInvoke(a, this)
+            ArgInvoke argInvoke = new ArgInvoke(a, this, description, epilog)
             {
                 Parameters = parameters,
                 HelpMessage = helpMsg
@@ -109,10 +119,17 @@ namespace ArgSharp.Args
         /// </summary>
         /// <param name="a">An <see cref="Action"/> method to be invoke later. Leaving it null will run the help message.</param>
         /// <param name="parent">The parent node.</param>
-        internal ArgInvoke(Action a, ArgInvoke parent = null) : base()
+        /// <param name="description">The description of the program.</param>
+        /// <param name="epilog">The epilogue of the program after printing the help.</param>
+        internal ArgInvoke(Action a,
+                           ArgInvoke parent = null,
+                           string description = "",
+                           string epilog = "") : base()
         {
             ParentNode = parent;
             this.a = a;
+            this.description = description;
+            this.epilog = epilog;
         }
 
         /// <summary>
@@ -257,6 +274,7 @@ namespace ArgSharp.Args
                     case ArgInvoke aInv:
                         // Pass only remaining args after the subcommand name to the subcommand
                         string[] remainingArgs = args.Skip(i + 1).ToArray();
+                        subcommandWasInvoked = true;
                         bool invokeResult = aInv.Invoke(remainingArgs, out statusCode, errorOutput);
                         return invokeResult;  // Return the result of subcommand invocation
                 }
