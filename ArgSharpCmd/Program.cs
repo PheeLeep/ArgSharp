@@ -17,6 +17,7 @@ namespace ArgSharpCmd
                 ArgSharpClass.AddArgument<string>(["-path"], "Path", "A file path.");
                 ArgSharpClass.AddArgument(["-sw", "--switch"], helpMsg: "A switch", defaultValue: false, isRequired: false);
                 ArgSharpClass.AddExample("ArgSharpCmd -sw");
+                ArgSharpClass.ArgumentZeroAction = ArgSharpClass.ArgZeroAction.ShowHelp;
 
                 var profile = ArgSharpClass.AddArgumentAction(["profile", "p"], null, "Performs show profiles.");
 
@@ -34,7 +35,9 @@ namespace ArgSharpCmd
 
                 }, "Performs run test (show output).");
                 prof2.ArgumentZeroAction = ArgSharpClass.ArgZeroAction.TreatAsSuccess;
-                if (!ArgSharpClass.Parse(args)) return;
+                var res = ArgSharpClass.Parse(args);
+                Console.WriteLine(res);
+                if (!res) return;
 
                 Console.WriteLine("Argument Stores:");
                 foreach (var arg in ArgSharpClass.GetArgStoreValues())

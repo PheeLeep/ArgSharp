@@ -85,7 +85,7 @@ namespace ArgSharp.Args
         /// <returns>Returns the <see cref="ArgInvoke"/> object.</returns>
         /// <exception cref="ArgumentParseException"></exception>
         public ArgInvoke AddArgumentAction(string[] parameters,
-                                           Action a = null, 
+                                           Action a = null,
                                            string helpMsg = "",
                                            string description = "",
                                            string epilog = "")
@@ -368,8 +368,14 @@ namespace ArgSharp.Args
 
             // Build each argument token e.g. [-h | --help] or [-o <file>]
             List<string> tokens = new List<string>();
+            if (args.Any(a => a is ArgInvoke))
+            {
+                tokens.Add("{action}");
+            }
+
             foreach (RootArgument arg in args)
             {
+                if (arg is ArgInvoke) continue;
                 StringBuilder sb = new StringBuilder("[");
                 for (int j = 0; j < arg.Parameters.Length; j++)
                 {
@@ -387,6 +393,9 @@ namespace ArgSharp.Args
                 sb.Append(']');
                 tokens.Add(sb.ToString());
             }
+
+            // Since help does not included, it should be added.
+            tokens.Add("[-h | --help]");
 
             // Print "Usage:" header then wrap tokens across lines
             string usageLabel = $"  {progName} {GetSubCommandNamePath()} ";
@@ -437,6 +446,7 @@ namespace ArgSharp.Args
         private void ShowHelp()
         {
             List<string[]> helpArgs = new List<string[]>();
+            List<string[]> actionArgs = new List<string[]>();
 
             foreach (RootArgument arg in args)
             {
@@ -458,11 +468,22 @@ namespace ArgSharp.Args
                         sb.Append(", ");
                 }
 
+                if (arg is ArgInvoke)
+                {
+                    actionArgs.Add(new[] { sb.ToString(), arg.HelpMessage ?? "" });
+                    continue;
+                }
                 helpArgs.Add(new[] { sb.ToString(), arg.HelpMessage ?? "" });
             }
 
             // Add help option
             helpArgs.Add(new[] { "  -h, --help", "Show this message and exit." });
+
+            if (actionArgs.Any())
+            {
+                Console.WriteLine("Actions:");
+                Console.WriteLine(Miscellaneous.GenerateTable(actionArgs.ToArray()));
+            }
 
             Console.WriteLine("Options:");
             Console.WriteLine(Miscellaneous.GenerateTable(helpArgs.ToArray()));
