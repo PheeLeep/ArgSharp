@@ -12,10 +12,12 @@ namespace ArgSharpCmd
             try
             {
                 ArgSharpClass.OnHelpInvoked = () => Environment.Exit(0);
-
+                ArgSharpClass.IgnoreConflictArgument = true;
                 ArgSharpClass.Init("ArgSharpCmd", "ArgSharp Command Test", "Description 1", "Epilogue");
                 ArgSharpClass.AddArgument<string>(["-path"], "Path", "A file path.");
                 ArgSharpClass.AddArgument(["-sw", "--switch"], helpMsg: "A switch", defaultValue: false, isRequired: false);
+                ArgSharpClass.AddArgument(["-sw", "--switch"], helpMsg: "A switch", defaultValue: false, isRequired: false);
+
                 ArgSharpClass.AddExample("ArgSharpCmd -sw");
                 ArgSharpClass.ArgumentZeroAction = ArgSharpClass.ArgZeroAction.ShowHelp;
 
@@ -28,7 +30,8 @@ namespace ArgSharpCmd
                     if (items.SingleOrDefault(a => a.Parameters.Contains("test")) is ArgStore<string> test)
                     {
                         Console.WriteLine($"Value {test.TypedValue}");
-                    } else
+                    }
+                    else
                     {
                         Console.WriteLine("Test argument not found.");
                     }

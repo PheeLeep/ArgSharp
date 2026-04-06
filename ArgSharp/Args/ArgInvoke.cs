@@ -326,8 +326,11 @@ namespace ArgSharp.Args
             {
                 string conflict = arg.Parameters.FirstOrDefault(p => existing.Parameters.Contains(p));
                 if (conflict != null)
+                {
+                    if (IgnoreConflictArgument) return;
                     throw new ArgumentParseException(
                         $"Parameter '{conflict}' is already registered by another argument.");
+                }
             }
 
             args.Add(arg);

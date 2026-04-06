@@ -102,6 +102,12 @@ namespace ArgSharp
         public static bool IsParsed { get; internal set; } = false;
 
         /// <summary>
+        /// Gets or sets if <see cref="AddArgument"/> or <see cref="AddArgumentAction"/> will 
+        /// ignore and discard the argument store, switch, or action if there is an existing parameter.
+        /// </summary>
+        public static bool IgnoreConflictArgument {get; set;} = false; 
+
+        /// <summary>
         /// Initializes the parser.
         /// </summary>
         /// <param name="progName">The name of the program. (example: ArgSharpCmd.exe or ArgSharpCmd)</param>
